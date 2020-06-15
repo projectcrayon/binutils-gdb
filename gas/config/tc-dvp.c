@@ -237,14 +237,37 @@ typedef enum { ENDMPG_USER, ENDMPG_INTERNAL, ENDMPG_MIDDLE } endmpg_caller;
 /* Return non-zero if STATE represents a relaxed state.  */
 #define RELAX_DONE_P(state) ((state) >= 10)
 
+/* The ABI to use.  */
+enum mips_abi_level
+{
+  NO_ABI = 0,
+  O32_ABI,
+  O64_ABI,
+  N32_ABI,
+  N64_ABI,
+  EABI_ABI
+};
+
+/* MIPS ABI we are using for this output file.
+   We default to N32_ABI since this is the default for the new toolchain.  */
+static enum mips_abi_level mips_abi = N32_ABI;
+
 const char *md_shortopts = "";
 
 struct option md_longopts[] =
 {
-#define OPTION_NO_DMA (OPTION_MD_BASE + 1)
-  { "no-dma", no_argument, NULL, OPTION_NO_DMA },
-#define OPTION_NO_DMA_VIF (OPTION_NO_DMA + 1)
+#define OPTION_NO_DMA     (OPTION_MD_BASE + 1)
+  { "no-dma",     no_argument, NULL, OPTION_NO_DMA },
+#define OPTION_NO_DMA_VIF (OPTION_MD_BASE + 2)
   { "no-dma-vif", no_argument, NULL, OPTION_NO_DMA_VIF },
+#define OPTION_MABI       (OPTION_MD_BASE + 3)
+  {"mabi",        required_argument, NULL, OPTION_MABI},
+#define OPTION_32 	      (OPTION_MD_BASE + 4)
+  {"32",          no_argument, NULL, OPTION_32},
+#define OPTION_N32 	      (OPTION_MD_BASE + 5)
+  {"n32",         no_argument, NULL, OPTION_N32},
+#define OPTION_64         (OPTION_MD_BASE + 6)
+  {"64",          no_argument, NULL, OPTION_64},
 
   {NULL, no_argument, NULL, 0}
 };
@@ -264,21 +287,95 @@ md_parse_option (c, arg)
       output_dma = 0;
       output_vif = 0;
       break;
+      /* The -32, -n32 and -64 options are shortcuts for -mabi=32, -mabi=n32
+	 and -mabi=64.  */
+    case OPTION_32:
+      mips_abi = O32_ABI;
+      break;
+    case OPTION_N32:
+      mips_abi = N32_ABI;
+      break;
+    case OPTION_64:
+      mips_abi = N64_ABI;
+      break;
+    case OPTION_MABI:
+      if (strcmp (arg, "32") == 0)
+	mips_abi = O32_ABI;
+      else if (strcmp (arg, "o64") == 0)
+	mips_abi = O64_ABI;
+      else if (strcmp (arg, "n32") == 0)
+	mips_abi = N32_ABI;
+      else if (strcmp (arg, "64") == 0)
+	mips_abi = N64_ABI;
+      else if (strcmp (arg, "eabi") == 0)
+	mips_abi = EABI_ABI;
+      else
+	{
+	  as_fatal (_("invalid abi -mabi=%s"), arg);
+	  return 0;
+	}
+      break;
     default :
       return 0;
     }
   return 1;
 }
 
+static void
+show (stream, string, col_p, first_p)
+     FILE *stream;
+     const char *string;
+     int *col_p;
+     int *first_p;
+{
+  if (*first_p)
+    {
+      fprintf (stream, "%24s", "");
+      *col_p = 24;
+    }
+  else
+    {
+      fprintf (stream, ", ");
+      *col_p += 2;
+    }
+
+  if (*col_p + strlen (string) > 72)
+    {
+      fprintf (stream, "\n%24s", "");
+      *col_p = 24;
+    }
+
+  fprintf (stream, "%s", string);
+  *col_p += strlen (string);
+
+  *first_p = 0;
+}
+
 void
 md_show_usage (stream)
   FILE *stream;
 {
+  int column, first;
   fprintf (stream, "\
 DVP options:\n\
 -no-dma			do not include DMA instructions in the output\n\
 -no-dma-vif		do not include DMA or VIF instructions in the output\n\
-");
+-mabi=ABI		create ABI conformant object file for:\n");
+
+  first = 1;
+
+  show (stream, "32", &column, &first);
+  show (stream, "o64", &column, &first);
+  show (stream, "n32", &column, &first);
+  show (stream, "64", &column, &first);
+  show (stream, "eabi", &column, &first);
+
+  fputc ('\n', stream);
+
+  fprintf (stream, "\
+-32			create o32 ABI object file\n\
+-n32			create n32 ABI object file (default)\n\
+-64			create 64 ABI object file\n");
 } 
 
 static void s_dmadata PARAMS ((int));
@@ -352,6 +449,16 @@ md_begin ()
 
   /* Set the type of the output file to r5900.  */
   bfd_set_arch_mach (stdoutput, bfd_arch_mips, 5900);
+
+  /* Set the MIPS ELF ABI flags.  */
+  if (mips_abi == O32_ABI)
+    elf_elfheader (stdoutput)->e_flags |= E_MIPS_ABI_O32;
+  else if (mips_abi == O64_ABI)
+    elf_elfheader (stdoutput)->e_flags |= E_MIPS_ABI_O64;
+  else if (mips_abi == EABI_ABI)
+    elf_elfheader (stdoutput)->e_flags |= E_MIPS_ABI_EABI32;
+  else if (mips_abi == N32_ABI)
+    elf_elfheader (stdoutput)->e_flags |= EF_MIPS_ABI2;
 }
 
 /* We need to keep a list of fixups.  We can't simply generate them as
