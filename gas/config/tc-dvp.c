@@ -219,6 +219,9 @@ static int output_dma = 1;
 /* Non-zero if vif insns are to be included in the output.  */
 static int output_vif = 1;
 
+/* When merging MIPS objects BFD will warn if PIC flags are mismatched  */
+static int enable_abicalls = 1;
+
 /* Current opcode/operand for use by md_operand.  */
 static const dvp_opcode *cur_opcode;
 static const dvp_operand *cur_operand;
@@ -268,6 +271,8 @@ struct option md_longopts[] =
   {"n32",         no_argument, NULL, OPTION_N32},
 #define OPTION_64         (OPTION_MD_BASE + 6)
   {"64",          no_argument, NULL, OPTION_64},
+#define OPTION_NO_ABICALLS (OPTION_MD_BASE + 7)
+  {"no-abicalls", no_argument, NULL, OPTION_NO_ABICALLS},
 
   {NULL, no_argument, NULL, 0}
 };
@@ -286,6 +291,9 @@ md_parse_option (c, arg)
     case OPTION_NO_DMA_VIF :
       output_dma = 0;
       output_vif = 0;
+      break;
+    case OPTION_NO_ABICALLS :
+      enable_abicalls = 0;
       break;
       /* The -32, -n32 and -64 options are shortcuts for -mabi=32, -mabi=n32
 	 and -mabi=64.  */
@@ -360,6 +368,7 @@ md_show_usage (stream)
 DVP options:\n\
 -no-dma			do not include DMA instructions in the output\n\
 -no-dma-vif		do not include DMA or VIF instructions in the output\n\
+-no-abicalls		do not mark header as PIC\n\
 -mabi=ABI		create ABI conformant object file for:\n");
 
   first = 1;
@@ -459,6 +468,11 @@ md_begin ()
     elf_elfheader (stdoutput)->e_flags |= E_MIPS_ABI_EABI32;
   else if (mips_abi == N32_ABI)
     elf_elfheader (stdoutput)->e_flags |= EF_MIPS_ABI2;
+
+  /* This doesn't make much sense for the DVP, but it's required to suppress
+   the mismatched abicall warning from the EEs linker  */
+  if(enable_abicalls)
+    elf_elfheader (stdoutput)->e_flags |= EF_MIPS_CPIC;
 }
 
 /* We need to keep a list of fixups.  We can't simply generate them as
