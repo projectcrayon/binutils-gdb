@@ -57,6 +57,40 @@ Boston, MA 02110-1301, USA.  */
 #  define WAIT_GRANDCHILD	1
 #endif
 
+#ifndef _O_RDONLY
+#define _O_RDONLY      O_RDONLY      
+#define _O_WRONLY      O_WRONLY      
+#define _O_RDWR        O_RDWR        
+#define _O_APPEND      O_APPEND      
+#define _O_CREAT       O_CREAT       
+#define _O_TRUNC       O_TRUNC       
+#define _O_EXCL        O_EXCL        
+#define _O_TEXT        O_TEXT        
+#define _O_BINARY      O_BINARY      
+#define _O_WTEXT       O_WTEXT       
+#define _O_U16TEXT     O_U16TEXT     
+#define _O_U8TEXT      O_U8TEXT      
+#define _O_RAW         O_RAW         
+#define _O_NOINHERIT   (0)
+#define _O_TEMPORARY   O_TEMPORARY   
+#define _O_SHORT_LIVED O_SHORT_LIVED 
+#define _O_OBTAIN_DIR  O_OBTAIN_DIR  
+#define _O_SEQUENTIAL  O_SEQUENTIAL  
+#define _O_RANDOM      O_RANDOM      
+#endif
+
+#ifndef _S_IFMT
+#define _S_IFMT   S_IFMT   
+#define _S_IFDIR  S_IFDIR  
+#define _S_IFCHR  S_IFCHR  
+#define _S_IFIFO  S_IFIFO  
+#define _S_IFREG  S_IFREG  
+#define _S_IREAD  S_IREAD  
+#define _S_IWRITE S_IWRITE 
+#define _S_IEXEC  S_IEXEC  
+#endif
+
+
 #define MINGW_NAME "Minimalist GNU for Windows"
 #define MINGW_NAME_LEN (sizeof(MINGW_NAME) - 1)
 
