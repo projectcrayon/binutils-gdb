@@ -3697,28 +3697,10 @@ EOF
 
 EOF
 
-	    case $host_os in
-	      mingw*)
-		cat <<"EOF"
-  /* execv doesn't actually work on mingw as expected on unix */
-  newargz = prepare_spawn (newargz);
-  rval = _spawnv (_P_WAIT, lt_argv_zero, (const char * const *) newargz);
-  if (rval == -1)
-    {
-      /* failed to start process */
-      LTWRAPPER_DEBUGPRINTF (("(main) failed to launch target \"%s\": errno = %d\n", lt_argv_zero, errno));
-      return 127;
-    }
-  return rval;
-EOF
-		;;
-	      *)
 		cat <<"EOF"
   execv (lt_argv_zero, newargz);
   return rval; /* =127, but avoids unused variable warning */
 EOF
-		;;
-	    esac
 
 	    cat <<"EOF"
 }
